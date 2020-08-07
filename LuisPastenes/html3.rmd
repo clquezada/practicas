@@ -1,0 +1,51 @@
+---
+title: "Generador de Numeros Aleatorios"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## generatenum
+
+generatenum es una funcion que se encarga de generar 25 numeros aleatorios de cero a cien, para luego procesarlos siguiendo la formula de distribucion normal Y = {1 / [σ * sqrt (2π)]} * e^( - (x - μ)^2 / 2σ^2) 
+
+```{r }
+generatenum<-function()
+{
+x<-runif(25,min=0,max=100) #crea numeros racionales aleatorios que van de 0 a 100 y los guarda en la variable x
+prom=mean(x) #promedio de la variable x
+base=exp(1) #numero euler
+desviation=sd(x) #desviacion estandar de x
+
+for(i in 1:25 ) #ciclo para procesar los 25 numeros siguiendo la formula de distribucion normal
+{
+
+exp=-(x[i]-prom)^2
+exp=exp/(2*desviation^2)
+x[i]=1/(desviation*sqrt(2*pi))
+x[i]=x[i]*base^exp
+}
+return(x)
+  
+}
+```
+
+## VectorX
+
+
+
+```{r}
+vectorx<-generatenum()
+vectorx
+```
+## VectorY
+```{r}
+vectory<-generatenum()
+vectory
+```
+## Plot
+```{r}
+plot(vectorx,vectory)
+```
