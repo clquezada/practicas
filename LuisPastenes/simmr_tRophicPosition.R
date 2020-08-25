@@ -24,12 +24,13 @@ geese_simmr = simmr_load(mixtures = as.matrix(targets[, 1:2]),
                          source_means = as.matrix(sources[,2:3]),
                          source_sds = as.matrix(sources[,4:5]),
                          correction_means = as.matrix(TEFs[,2:3]),
-                         correction_sds = as.matrix(TEFs[,4:5])
-                         )
+                         correction_sds = as.matrix(TEFs[,4:5]),
+                         group = as.factor(paste('Day', targets$Time)
+                         ))
 
 # graficamos. Por defecto se ocupa el método plot.simmr_input 
 # (si miras el código fuente del paquete simmr)
-plot(geese_simmr)
+plot(geese_simmr, group = 1:8)
 
 # tRophicPosition es algo similar
 library(tRophicPosition)
