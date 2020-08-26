@@ -1,0 +1,147 @@
+---
+title: "Semana 3"
+author: "Edinnson Brito"
+date: "26-08-2020"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+
+## Semana 3: PrimerMiner.
+
+PrimerMiner es un descargador de secuencias por lotes basado en R para diseñar y verificar cebadores de metabarcoding. Las secuencias para un marcador específico (por ejemplo, COI) se obtienen de NCBI y BOLD y se agrupan en unidades taxonómicas operativas (OTU) para reducir el sesgo introducido por secuencias sobre representadas en las bases de datos.
+
+Link de repositorio github:  <https://github.com/VascoElbrecht/PrimerMiner>.
+
+
+
+### Tutorial basico de PrimerMiner.
+
+#### Trabajando con RStudio:
+
+establezcer la ruta a la carpeta PrimerMinder que acaba de descargar
+```{r}
+setwd("/home/edinson/Escritorio/PrimerMiner-master/")
+```
+
+
+instalar las dependencias icl del paquete PrimerMiner
+
+```{r}
+install.packages(c("bold", "XML", "rentrez", "seqinr"), dependencies=T)
+install.packages("PrimerMiner", repos = NULL, type="source", dependencies=T)
+```
+
+cargar el paquete en R
+
+```{r}
+library("PrimerMiner")
+```
+
+establecer la ruta donde se encuentran los datos de muestra
+
+```{r}
+setwd("Sample_Data")
+```
+
+
+crear archivos de configuración y descargar lecturas por lotes (la funcion que permite realizar el clustering solo funciona para arquitecturas basadas en Unix)
+
+```{r}
+batch_config("config.txt")
+```
+
+datos de secuencia de proceso y descarga por lotes
+
+```{r}
+batch_download("taxa_small.csv", "config.txt")
+```
+
+#### El autor dice: "¡Tienes que generar y verificar manualmente la alineación! Extraiga únicamente la región amplificada por los cebadores (+2 * la longitud del cebador en cada lado). ¡Recomendamos Geneious para hacer esto!"-
+
+Link de descarga Geneious: <https://www.geneious.com/free-trial/>. (es su version de prueba, dura 14 dias.)
+
+
+
+Encontrará 5 alineaciones de muestra generadas con Geneious en la carpeta "1 alineaciones COI (sin procesar)". Los usaremos en los siguientes pasos de este tutorial.
+
+
+conseguir alineaciones para procesar
+
+
+```{r}
+fastafiles <- list.files("1 COI alignments (unprocessed)", full.names=T)
+```
+
+
+definir nombre y carpeta para guardar archivos
+
+```{r}
+fastafiles_export <- paste("2 COI alignments (processed)", list.files("1 COI alignments (unprocessed)"), sep="/")
+```
+
+procesar archivos! Esta función eliminará los huecos de las alineaciones y aplicará un recorte selectivo a las regiones del cebador.
+
+```{r}
+for (i in 1:length(fastafiles)){
+selectivetrim(fastafiles[i], fastafiles_export[i], trimL=25, trimR=26, gaps=0.10, minsequL=100)
+}
+```
+
+
+Los alineadores sin huecos procesados ahora pueden trazarse con PrimerMiner o procesarse con software de desarrollo de imprimaciones de terceros
+
+segúrese de comprobar que todos los alineadores tengan la misma longitud (estén alineados)
+
+
+```{r}
+alignments <- list.files("2 COI alignments (processed)", full.name=T) # encontrar archivos
+
+
+```
+
+
+graficar resultados (exportar como pdf)
+
+```{r}
+pdf("plot_alignments.pdf", height=4, width=100)
+plot_alignments(alignments, Order_names=gsub(".*./._(.*)_.*", "\\1", alignments))
+dev.off()
+
+```
+
+evaluación de "imprimación in silico""
+Con PrimerMiner v0.13, las tablas de puntuación para la posición y el tipo de coincidencia están integradas en PrimerMiner. Sin embargo, puede generar sus tablas defult y utilizarlas (proporcione como un csv, consulte los datos de muestra para las tablas predeterminadas).
+
+```{r}
+evaluate_primer("primer_scoring/01_Plecoptera_subset.fasta", "GGTCAACAAATCATAAAGATATTGG", 1, 25, save="save_evaluation_table_LCO.csv", mm_position ="Position_v1", adjacent=2, mm_type="Type_v1") 
+
+
+evaluate_primer("primer_scoring/01_Plecoptera_subset.fasta", "ARYATDGTRATDGCHCCDGC", 585, 604, save="save_evaluation_table_BR1.csv", mm_position ="Position_v1", adjacent=2, mm_type="Type_v1", forward=F) 
+
+```
+
+
+Evaluar pares primarios entre sí
+
+
+```{r}
+primer_threshold("save_evaluation_table_LCO.csv", "save_evaluation_table_BR1.csv", threshold=120)
+
+```
+
+generar diferentes versiones de imprimación que están contenidas en una imprimación degenerada
+
+```{r}
+primerversions("GCHCCHGAYATRGCHTTYCC") # BF2
+
+```
+
+
+
+
+
+#### Este tutorial se encuentra en el repostiroio github <https://github.com/VascoElbrecht/PrimerMiner>.
+#### la documentacion se puede encontar en <https://github.com/VascoElbrecht/PrimerMiner/wiki>.
