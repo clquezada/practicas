@@ -1,0 +1,110 @@
+#pasar excel de Trophical position a simmr
+# Ocupamos un archivo csv como entrada
+#en este caso bilagay_for_trophicposition.csv es el dato de entrada
+# (Puedes importarlo en Excel para ver la estructura)
+system.file("extdata", "Bilagay_for_tRophicPosition.csv", 
+            package = "tRophicPosition")
+# como es un archivo externo (extdata) podemos ocupar el método data
+data("Bilagay")
+#muestro el csv
+Bilagay
+#estructura de csv
+str(Bilagay)
+#en este caso me arroja que tiene 841 obs de 7 variables
+#muestro todos los Carbonos y nitrogenos del csv
+as.matrix(Bilagay[5:6])
+#creo un vector con los nombres 
+names= c("bilagay","b1","b2")
+names
+#filtro el csv segun FG, en este caso FG=Bilagay-Benthic_BL-Pelagic_BL
+x<-subset(Bilagay,FG=="Bilagay")
+
+z<-subset(Bilagay,FG=="Benthic_BL")
+
+w<-subset(Bilagay,FG=="Pelagic_BL")
+
+#muestro el resultado
+x
+z
+w
+
+#Creo una matriz con los datos de Carbono y nitrogeno de FG=Bilagay-Benthic_BL-Pelagic_BL
+xdatos=matrix(c(x$d13C,x$d15N),
+          nrow=344,
+          ncol=2)
+zdatos=matrix(c(z$d13C,z$d15N),
+              nrow=299,
+              ncol=2)
+wdatos=matrix(c(w$d13C,w$d15N),
+              nrow=198,
+              ncol=2)
+#muestro el resultado
+xdatos
+zdatos
+wdatos
+
+#creo un vector con los promedios de carbono de Bilagay-Benthic_BL-Pelagic_BL
+sourcesmeanC<- c(mean(x$d13C),mean(z$d13C),mean(w$d13C))
+sourcesmeanC
+
+#creo un vector con la desviacion estandar de Carbono de Bilagay-Benthic_BL-Pelagic_BL
+sourcessdC<- c(sd(x$d13C),sd(z$d13C),sd(w$d13C))
+sourcessdC
+
+#creo un vector con los promedios de Nitrogeno de Bilagay-Benthic_BL-Pelagic_BL
+sourcesmeanN<- c(mean(x$d15N),mean(z$d15N),mean(w$d15N))
+sourcesmeanN
+
+#creo un vector con las desviaciones estandar de Nitrogeno de Bilagay-Benthic_BL-Pelagic_BL
+sourcessdN<- c(sd(x$d15N),sd(z$d15N),sd(w$d15N))
+sourcessdN
+#creo una matriz con los promedios de carbono y nitrogeno
+sourcesbilagaymeans<- matrix(c(sourcesmeanC,sourcesmeanN),
+                             nrow=3,
+                             ncol=2)
+sourcesbilagaymeans
+#creo una matriz con las desviaciones estandar de carbono y nitrogeno
+sourcesbilagaysd<- matrix(c(sourcessdC,sourcessdN),
+                             nrow=3,
+                             ncol=2)
+sourcesbilagaysd
+
+TDF() #hecharle un look 
+# funcion delta
+meanSD <- function(x, mean, sd) {
+  #le tuve que quitar el seed
+  
+  x <- stats::rnorm(x, mean, sd)
+  X <- x
+  MEAN <- mean
+  SD <- sd
+  Z <- (((X - mean(X, na.rm = TRUE))/sd(X, na.rm = TRUE))) * SD
+  MEAN + Z
+}
+
+#correlation C
+uff=meanSD(as.matrix(Bilagay[5]),mean(as.matrix(Bilagay[5])),sd(as.matrix(Bilagay[5])))
+uff
+#correlation N
+uff2=meanSD(as.matrix(Bilagay[6]),mean(as.matrix(Bilagay[6])),sd(as.matrix(Bilagay[6])))
+uff2
+
+#este es el simmr que vimos ayer en reunion
+geese_simmr2 = simmr_load(mixtures = as.matrix(Bilagay[5:6]), #error
+                         source_names = names,
+                         source_means = sourcesbilagaymeans,
+                         source_sds = sourcesbilagaysd 
+                         
+)
+#este es el que hice solo con bilagay
+geese_simmr = simmr_load(mixtures = xdatos, #error
+                         source_names = names,
+                        source_means = sourcesbilagaymeans,
+                         source_sds = sourcesbilagaysd 
+                         
+)
+#crear funcion de tp-> simmr
+#https://www.tidyverse.org/ hecharle un look
+#cheatssheets
+plot(geese_simmr2)
+plot(geese_simmr)
