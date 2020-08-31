@@ -1,0 +1,112 @@
+# simmr
+library(simmr)
+library(dplyr)
+library(readxl)
+library(tRophicPosition)
+
+TPtoSimmr<-function(df= "Bilagay_for_tRophicPosition.csv",
+                    filtro1=NULL, #STUDY
+                    filtro2=NULL, #LOCATION
+                    filtro3=NULL , #SPP
+                    filtro4= NULL,#NS
+                    base1= "Bilagay",
+                    base2="Benthic_BL",
+                    base3="Pelagic_BL"
+  
+    
+                  )
+{
+  ruta=system.file("extdata", df, 
+              package = "tRophicPosition")
+  datos<-read.csv(ruta)
+  
+  #filtro 1
+  
+  if (!is.null(filtro1)) { 
+    
+    datos<-subset(datos,Study==filtro1) 
+    
+    
+  }
+  #filtro2
+  if (!is.null(filtro2)) { 
+    datos<-subset(datos,Location==filtro2)
+    
+  }
+  #filtro3
+  if (!is.null(filtro3)) { 
+    datos<-subset(datos,Spp==filtro3)
+    
+  }
+  
+  #filtro4
+  if (!is.null(filtro4)) { 
+    datos<-subset(datos,NS==filtro4)
+    
+  }
+  
+  #base1
+  if (!is.null(base1)) { 
+    b1<-subset(datos,FG==base1)
+    valoresb1<-matrix(c(b1$d13C,b1$d15N),nrow=length(b1$d13C),ncol=2)   
+    
+    
+  }
+  
+  #base2
+  if (!is.null(base2)) { 
+    b2<-subset(datos,FG==base2)
+    #promedios Carbono y Nitrogeno base 2
+    promvaloresb2<- c(mean(b2$d13C),mean(b2$d15N))
+    #desviacion estandar Carbono y Nitrogeno base 2
+    sdvaloresb2<- c(sd(b2$d13C),sd(b2$d15N))
+    #deltas base 2
+    b2deltaC<-meanSD(length(b2$d13C),mean(b2$d13C),sd(b2$d13C))
+    b2deltaN<-meanSD(length(b2$d15N),mean(b2$d15N),sd(b2$d15N))
+    
+    #corrections promedios base 2
+    correctionspromb2<- c(mean(b2deltaC),mean(b2deltaN))
+    #corrections sd base 2
+    correctionssdb2<- c(sd(b2deltaC),sd(b2deltaN))
+    
+    
+  }
+  
+  #base3
+  if (!is.null(base3)) { 
+    b3<-subset(datos,FG==base3)
+    #promedios Carbono y Nitrogeno base 3
+    promvaloresb3<- c(mean(b3$d13C),mean(b3$d15N))
+    #desviacion estandar Carbono y Nitrogeno base 3
+    sdvaloresb3<- c(sd(b3$d13C),sd(b3$d15N))
+    #deltas base 3
+    b3deltaC<-meanSD(length(b3$d13C),mean(b3$d13C),sd(b3$d13C))
+    b3deltaN<-meanSD(length(b3$d15N),mean(b3$d15N),sd(b3$d15N))
+    
+    #corrections promedios base 3
+    correctionspromb3<- c(mean(b3deltaC),mean(b3deltaN))
+    #corrections sd base 3
+    correctionssdb3<- c(sd(b3deltaC),sd(b3deltaN))
+    
+  }
+  
+  
+  
+  
+  
+  
+  return(correctionspromb3)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+}
+
+
+x<-TPtoSimmr()
+x
