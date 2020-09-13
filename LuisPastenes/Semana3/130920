@@ -1,0 +1,256 @@
+# simmr
+  library(simmr)
+  library(dplyr)
+  library(readxl)
+  library(tRophicPosition)
+  
+  library(xlsx)
+  
+  
+
+  
+  
+ 
+  TPtoSimmr<-function(df="Bilagay_for_tRophicPosition.xlsx",
+                      filtro1="MEC", #STUDY
+                      filtro2=c("Coquimbo","Tocopilla"), #LOCATION
+                      filtro3=NULL , #SPP
+                      filtro4= 10,#NS
+                      base1= "Peces",
+                      base2="Pelagic_BL",
+                      base3="Benthic_BL",
+                      correction_meansCb2=0,
+                      correction_meansNb2=0,
+                      correction_sdCb2=0,
+                      correction_sdNb2=0,
+                      correction_meansCb3=0,
+                      correction_meansNb3=0,
+                      correction_sdCb3=0,
+                      correction_sdNb3=0
+                      
+      
+                    )
+  
+  
+  
+  
+  {
+    
+    #llamada de excel
+  
+    ruta=system.file("extdata", df, 
+                package = "tRophicPosition")
+    datos<-read.xlsx(ruta,1)
+    
+    #pasamos la columna NS de la 7ma pocision a la 4ta
+    
+    datos<- datos[,c(1,2,3,7,4,5,6)]
+    datos
+    
+    
+    
+    column<-names(datos)
+    lista<-list(filtro1,filtro2,filtro3,filtro4)
+    
+    #retorna un dataframe con los filtros aplicados
+    
+    funcionData<- function(dataframe, item)
+    {
+      for (i in 1:4)
+      {
+        
+        
+        if(!is.null(item[[i]]))
+          
+        {
+        
+        dataframe<-subset(dataframe,dataframe[[i]] %in% item[[i]])
+        
+        }
+      }
+      return(dataframe)
+    }
+    
+    datos<-funcionData(datos,lista)
+    
+    
+    
+    
+    
+    
+    
+    # #filtro 1
+    #
+    # if (!is.null(filtro1)) {
+    #
+    #
+    #
+    #   if(any(datos$Study==filtro1))
+    #   {
+    #     datos<-subset(datos,Study %in% filtro1)
+    #   }
+    #   else
+    #   {
+    #     stop("filtro 1 no existe en el dataframe")
+    #     return (NULL)
+    #
+    #
+    #
+    #   }
+    #
+    #
+    #
+    # }
+
+   #retorna una lista con las filas de la base seleccionada, los valores, promedio y desviacion estandar de carbono y nitrogeno
+    bases<- function(dataframe, base)
+    {
+      if (!is.null(base)) {
+        b1<-subset(datos,FG==base)
+        valoresb1<-matrix(c(b1$d13C,b1$d15N),nrow=length(b1$d13C),ncol=2)
+        promvaloresb1<- c(mean(b1$d13C),mean(b1$d15N))
+        sdvaloresb1<- c(sd(b1$d13C),sd(b1$d15N))
+        colnames(valoresb1)<-c("d13C","d15N")
+       
+        return(list(data=b1,carbononitrogeno=valoresb1,promedio=promvaloresb1,sd=sdvaloresb1))
+        
+      }
+    }
+    
+    
+    #bases
+      b1<-bases(datos,base1)
+      b2<-bases(datos,base2)
+      b3<-bases(datos,base3)
+    
+
+    #Nombres
+
+    Nombres<- c(base2,base3)
+    
+    #sourceMeans y sourceSD 
+    
+    sourceMeans<-matrix(c(b2$promedio,b3$promedio),ncol = 2,nrow = 2 )
+    sourceSD<-matrix(c(b2$sd,b3$sd),ncol = 2,nrow = 2 )
+    
+    #Traspuesta sourceMeans y sourceSD 
+    sourceMeans<-t(sourceMeans)
+    sourceSD<-t(sourceSD)
+    
+    
+    #corrections function
+    
+    funcionCorrections<- function(var1=correction_meansCb2,
+                                  var2=correction_meansNb2,
+                                  var3=correction_sdCb2,
+                                  var4=correction_sdNb2,
+                                  var5=correction_meansCb3,
+                                  var6=correction_meansNb3,
+                                  var7=correction_sdCb3,
+                                  var8=correction_sdNb3)
+    {
+      
+    correctionsMeansb2=sapply(TDF(), mean)
+    correctionsSDb2=sapply(TDF(), sd)
+    correctionsMeansb3=sapply(TDF(), mean)
+    correctionsSDb3=sapply(TDF(), sd)
+      #mean
+
+    if (!is.null(var1)) {
+            correctionsMeansb2[2]=var1
+          }
+
+          if (!is.null(var2)) {
+            correctionsMeansb2[1]=var2
+          }
+
+          if (!is.null(var5)) {
+            correctionsMeansb3[2]=var5
+          }
+
+          if (!is.null(var6)) {
+            correctionsMeansb3[1]=var6
+          }
+          #sd
+
+          if (!is.null(var3)) {
+            correctionsSDb2[2]=var3
+          }
+
+          if (!is.null(var4)) {
+            correctionsSDb2[1]=var4
+          }
+
+          if (!is.null(var7)) {
+            correctionsSDb3[2]=var7
+          }
+
+          if (!is.null(var8)) {
+            correctionsSDb3[1]=var8
+          }
+    
+    #por comodidad invertirmos las columnas para que queden C y N y no N Y C
+
+    correctionsMeansb2=rev(correctionsMeansb2)
+    correctionsSDb2=rev(correctionsSDb2)
+    correctionsMeansb3=rev(correctionsMeansb3)
+    correctionsSDb3=rev(correctionsSDb3)
+    
+    #matriz corrections
+    corrections_means<-matrix(c( correctionsMeansb2, correctionsMeansb3),ncol = 2,nrow = 2 )
+    corrections_sd<-matrix(c( correctionsSDb2, correctionsSDb3),ncol = 2,nrow = 2 )
+    #traspuesta
+    corrections_means<-t(corrections_means)
+    corrections_sd<-t(corrections_sd)
+
+      return(list(correctionsMeansb2=correctionsMeansb2,
+                  correctionsSDb2=correctionsSDb2,
+                  correctionsMeansb3=correctionsMeansb3,
+                  correctionsSDb3=correctionsSDb3,
+                  corrections_means=corrections_means,
+                  corrections_sd=corrections_sd ))
+    }
+
+    corrections=funcionCorrections()
+    
+
+    #group
+    gr<-factor(b1$Spp)
+
+
+
+
+
+
+    geese_simmr = simmr_load(mixtures = b1$carbononitrogeno,
+                             source_names = Nombres,
+                             source_means = sourceMeans,
+                             source_sds = sourceSD,
+                            correction_means = corrections$corrections_means,
+                            correction_sds = corrections$corrections_sd,
+                           #  group = gr
+
+
+
+
+    )
+
+
+
+  
+    
+  return(geese_simmr)
+  #return(filtro2)
+    
+    
+  }
+  
+  
+  x<-TPtoSimmr()
+  x
+  
+  
+ 
+ 
+
+plot(x)
