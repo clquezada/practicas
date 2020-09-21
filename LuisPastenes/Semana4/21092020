@@ -1,0 +1,366 @@
+# simmr
+  library(simmr)
+  library(dplyr)
+  library(readxl)
+  library(tRophicPosition)
+  library(tidyverse)
+  library(xlsx)
+  
+  
+  
+
+  #recibir lista de filtros
+  #recibir mixture y bases en listas
+  
+  filtro1="MEC"#STUDY
+  filtro2=c("Coquimbo","Tocopilla")#LOCATION
+  filtro3=NULL  #SPP
+  filtro4= NULL#NS
+  
+  lista<-list(filtro1,filtro2,filtro3,filtro4)
+  
+  column1="Study"
+  column2="Location"
+  column3="Spp"
+  column4="NS"
+  columnas<-c(column1,column2,column3,column4)
+  columnas
+ 
+  
+  
+  
+  
+  str(columnas)
+ exists(x==columnas[1])
+ 
+ 
+
+ 
+ basement<-c("Pelagic_BL","Peces")
+ basement
+ 
+
+ 
+ 
+  TPtoSimmr<-function(df="Bilagay_for_tRophicPosition.xlsx",
+                      filtro=lista,
+                      columnass=columnas,
+                      mixture= "Benthic_BL",
+                      base1="Pelagic_BL",
+                      base2="Peces",
+                    
+                      correction_meansCb1=0,
+                      correction_meansNb1=0,
+                      correction_sdCb1=0,
+                      correction_sdNb1=0,
+                      correction_meansCb2=0,
+                      correction_meansNb2=0,
+                      correction_sdCb2=0,
+                      correction_sdNb2=0
+                      
+      
+                    )
+  
+  
+  
+  
+  {
+    
+    #llamada de excel
+  
+    ruta=system.file("extdata", df, 
+                package = "tRophicPosition")
+    
+   if( file.exists(ruta))
+   {
+    
+      datos<-read.xlsx(ruta,1)
+   }
+    else
+    {
+      stop("no existe ningun archivo con el nombre  ", df, "  dentro de tRophicPosition/extdata ")
+      return (NULL)
+    }
+    
+   
+ 
+    
+    #pasamos la columna NS de la 7ma pocision a la 4ta
+    
+   datos<- datos[,c(1,2,3,7,4,5,6)]
+    datos
+    
+    #TOMAR ARCHIVO GENERICO
+    
+    
+    #verificar columnas del filtro en el dataframe
+
+    column<-names(datos)
+
+    for (i in columnass)
+    {
+      if(!is.null(i))
+      {
+
+         if(!(has_element(column,i)))
+         {
+           
+           
+           stop("La columna ", i," no fue encontrada en el dataframe")
+           return (NULL)
+         }
+      }
+    }
+    
+    
+    
+   
+    
+    
+    
+    
+    #retorna un dataframe con los filtros aplicados
+    
+    funcionData<- function(dataframe, item, Columnas)
+    {
+      
+      
+      
+       for (i in 1:length(item))
+       {
+          
+          
+          if(!is.null(item[[i]]))
+             
+          { 
+            
+            
+            if(any(dataframe[,Columnas[i]]  %in% item[[i]]))
+            {
+            
+             
+            # dataframe<-dataframe %>% filter(dataframe[,i]  %in% item[[i]])
+             dataframe<-dataframe %>% filter(dataframe[,Columnas[i]]  %in% item[[i]])
+            
+            
+            }
+            else
+            {
+              stop("No se ha encontrado  ", item[[i]],"  en la columna  ", Columnas[i])
+              return (NULL)
+            }
+            
+
+             
+          }
+          
+          
+       }
+        
+        
+      
+      
+      
+     
+      return(dataframe)
+    }
+    
+    datos<-funcionData(datos,filtro,columnass)
+    
+    
+    
+    
+    
+    
+    
+    # #filtro 1
+    #
+    # if (!is.null(filtro1)) {
+    #
+    #
+    #
+    #   if(any(datos$Study==filtro1))
+    #   {
+    #     datos<-subset(datos,Study %in% filtro1)
+    #   }
+    #   else
+    #   {
+    #     stop("filtro 1 no existe en el dataframe")
+    #     return (NULL)
+    #
+    #
+    #
+    #   }
+    #
+    #
+    #
+    # }
+
+   #retorna una lista con las filas de la base seleccionada, los valores, promedio y desviacion estandar de carbono y nitrogeno
+    bases<- function(dataframe, base)
+    {
+      if (!is.null(base)) {
+
+
+         b1<-dataframe %>% filter(dataframe[,5] %in% base)
+
+        valoresb1<-matrix(c(b1$d13C,b1$d15N),nrow=length(b1$d13C),ncol=2)
+
+        #promvaloresb1<- c(mean(b1$d13C),mean(b1$d15N))
+
+        promvaloresb1<-as.numeric(summarise(b1,meand13C=mean(d13C),meand15N=mean(d15N)))
+        sdvaloresb1<- as.numeric(summarise(b1,sdd13C=sd(d13C),sdd15N=sd(d15N)))
+        colnames(valoresb1)<-c("d13C","d15N")
+
+        return(list(data=b1,carbononitrogeno=valoresb1,promedio=promvaloresb1,sd=sdvaloresb1))
+
+      }
+    }
+
+
+    #bases
+      mixture<-bases(datos,mixture)
+
+      b1<-bases(datos,base1)
+      b2<-bases(datos,base2)
+
+
+    #Nombres
+
+    Nombres<- c(base1,base2)
+
+    #sourceMeans y sourceSD
+
+    sourceMeans<-matrix(c(b1$promedio,b2$promedio),ncol = 2,nrow = 2 )
+    sourceSD<-matrix(c(b1$sd,b2$sd),ncol = 2,nrow = 2 )
+
+    #Traspuesta sourceMeans y sourceSD
+    sourceMeans<-t(sourceMeans)
+    sourceSD<-t(sourceSD)
+
+
+    #corrections function
+
+    funcionCorrections<- function(var1=correction_meansCb1,
+                                  var2=correction_meansNb1,
+                                  var3=correction_sdCb1,
+                                  var4=correction_sdNb1,
+                                  var5=correction_meansCb2,
+                                  var6=correction_meansNb2,
+                                  var7=correction_sdCb2,
+                                  var8=correction_sdNb2)
+    {
+#primero evaluar si es nulo y despues calcularlo por defecto
+    correctionsMeansb1=sapply(TDF(), mean)
+    correctionsSDb1=sapply(TDF(), sd)
+    correctionsMeansb2=sapply(TDF(), mean)
+    correctionsSDb2=sapply(TDF(), sd)
+      #mean
+
+    if (!is.null(var1)) {
+            correctionsMeansb1[2]=var1
+          }
+
+          if (!is.null(var2)) {
+            correctionsMeansb1[1]=var2
+          }
+
+          if (!is.null(var5)) {
+            correctionsMeansb2[2]=var5
+          }
+
+          if (!is.null(var6)) {
+            correctionsMeansb2[1]=var6
+          }
+          #sd
+
+          if (!is.null(var3)) {
+            correctionsSDb1[2]=var3
+          }
+
+          if (!is.null(var4)) {
+            correctionsSDb1[1]=var4
+          }
+
+          if (!is.null(var7)) {
+            correctionsSDb2[2]=var7
+          }
+
+          if (!is.null(var8)) {
+            correctionsSDb2[1]=var8
+          }
+
+    #por comodidad invertirmos las columnas para que queden C y N y no N Y C
+
+    correctionsMeansb1=rev(correctionsMeansb1)
+    correctionsSDb1=rev(correctionsSDb1)
+    correctionsMeansb2=rev(correctionsMeansb2)
+    correctionsSDb2=rev(correctionsSDb2)
+
+    #matriz corrections
+    corrections_means<-matrix(c( correctionsMeansb1, correctionsMeansb2),ncol = 2,nrow = 2 )
+    corrections_sd<-matrix(c( correctionsSDb2, correctionsSDb2),ncol = 2,nrow = 2 )
+    #traspuesta
+    corrections_means<-t(corrections_means)
+    corrections_sd<-t(corrections_sd)
+
+      return(list(correctionsMeansb1=correctionsMeansb1,
+                  correctionsSDb1=correctionsSDb1,
+                  correctionsMeansb2=correctionsMeansb2,
+                  correctionsSDb2=correctionsSDb2,
+                  corrections_means=corrections_means,
+                  corrections_sd=corrections_sd ))
+    }
+
+    corrections=funcionCorrections()
+
+
+    #group
+    gr<-factor(mixture$data$Spp)
+
+
+
+
+
+
+    geese_simmr = simmr_load(mixtures = mixture$carbononitrogeno,
+                             source_names = Nombres,
+                             source_means = sourceMeans,
+                             source_sds = sourceSD,
+                           correction_means = corrections$corrections_means,
+                           correction_sds = corrections$corrections_sd,
+                           group = gr
+
+
+
+
+    )
+
+
+
+
+    
+  return(geese_simmr)
+  #return(filtro2)
+    
+    
+  }
+  
+  
+  x<-TPtoSimmr()
+  x
+  
+  
+  str(x)
+  
+ 
+  
+plot(x,group = 1:3)
+
+unite(x,"Community",Study,Location,sep="-")
+
+
+# x<-x %>% mutate(Community=paste(Study,"-",Location))
+# x
+
+#gather() - largo y spread() - ancho
