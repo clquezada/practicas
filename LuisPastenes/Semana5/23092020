@@ -1,0 +1,407 @@
+ # simmr
+  library(simmr)
+  library(dplyr)
+  library(readxl)
+  library(tRophicPosition)
+  library(tidyverse)
+  library(xlsx)
+  
+  
+  
+
+  
+  filtro1="MEC"#STUDY
+  filtro2=c("Coquimbo","Tocopilla")#LOCATION
+  filtro3=NULL  #SPP
+  filtro4= NULL#NS
+  
+  lista<-list(filtro1,filtro2,filtro3,filtro4)
+  
+  column1="Study"
+  column2="Location"
+  column3="Spp"
+  column4="NS"
+  columnas<-c(column1,column2,column3,column4)
+  columnas
+  
+  #diccionario
+  #hashmap
+  #dict
+  #hash
+  
+
+#96-130
+var<-matrix(ncol = 2,nrow=2) 
+var[1,1]<-8
+var[1,2]<-8
+var[2,1]<-8
+var[2,2]<-8
+var[3,1]<-8
+var[3,2]<-8
+var
+
+
+
+  TPtoSimmr<-function(df="Bilagay_for_tRophicPosition.xlsx",
+                      filtro=lista,
+                      columnass=columnas,
+                      mixture= "Benthic_BL",
+                      baselines=c("Pelagic_BL","Peces"),
+                      baseColumn="FG",
+                      mixtureColumn="FG",
+                      ColumnC="d13C",
+                      ColumnN="d15N",
+                      correctionsMeans=var,
+                      correctionsSD=var
+                      
+                      
+      
+                    )
+  
+  
+  
+  
+  {
+    
+    #llamada de excel
+  
+    ruta=system.file("extdata", df, 
+                package = "tRophicPosition")
+    
+   if( file.exists(ruta))
+   {
+    
+      datos<-read.xlsx(ruta,1)
+   }
+    else
+    {
+      stop("no existe ningun archivo con el nombre  ", df, "  dentro de tRophicPosition/extdata ")
+      return (NULL)
+    }
+    
+   
+ 
+    
+    #pasamos la columna NS de la 7ma pocision a la 4ta
+    
+  # datos<- datos[,c(1,2,3,7,4,5,6)]
+    datos
+    
+    #TOMAR ARCHIVO GENERICO
+    
+    
+    #verificar columnas del filtro en el dataframe
+
+    column<-names(datos)
+
+    for (i in columnass)
+    {
+      if(!is.null(i))
+      {
+
+         if(!(has_element(column,i)))
+         {
+           
+           
+           stop("La columna ", i," no fue encontrada en el dataframe")
+           return (NULL)
+         }
+      }
+    }
+    
+    
+    
+   
+    
+    
+    
+    
+    #retorna un dataframe con los filtros aplicados
+    
+    funcionData<- function(dataframe, item, Columnas)
+    {
+      
+      
+      
+       for (i in 1:length(item))
+       {
+          
+          
+          if(!is.null(item[[i]]))
+             
+          { 
+            
+            
+            if(any(dataframe[,Columnas[i]]  %in% item[[i]]))
+            {
+            
+             
+            # dataframe<-dataframe %>% filter(dataframe[,i]  %in% item[[i]])
+             dataframe<-dataframe %>% filter(dataframe[,Columnas[i]]  %in% item[[i]])
+            
+            
+            }
+            else
+            {
+              stop("No se ha encontrado  ", item[[i]],"  en la columna  ", Columnas[i])
+              return (NULL)
+            }
+            
+
+             
+          }
+          
+          
+       }
+        
+        
+      
+      
+      
+     
+      return(dataframe)
+    }
+    
+    datos<-funcionData(datos,filtro,columnass)
+    
+    
+    
+    
+    
+    
+    
+    # #filtro 1
+    #
+    # if (!is.null(filtro1)) {
+    #
+    #
+    #
+    #   if(any(datos$Study==filtro1))
+    #   {
+    #     datos<-subset(datos,Study %in% filtro1)
+    #   }
+    #   else
+    #   {
+    #     stop("filtro 1 no existe en el dataframe")
+    #     return (NULL)
+    #
+    #
+    #
+    #   }
+    #
+    #
+    #
+    # }
+
+    
+    
+    
+    
+    
+    
+   #retorna una lista con las filas de la base seleccionada, los valores, promedio y desviacion estandar de carbono y nitrogeno
+    bases<- function(dataframe, base, baseColumn,ColumnC,ColumnN)
+    {
+      var<-names(dataframe)
+      listaaa<-list()
+      
+      
+      for (i in base)
+      {
+        
+        if(has_element(var,baseColumn))
+        {
+          if(any(dataframe[,baseColumn]  %in% i))
+          {
+            data<-dataframe %>% filter(dataframe[,baseColumn] %in% i)
+             CN<-select(data,ColumnC,ColumnN)
+ 
+            promvalores<-as.numeric(summarise(CN,meand13C=mean(CN[,1]),meand15N=mean(CN[,2])))
+            sdvalores<- as.numeric(summarise(CN,sdd13C=sd(CN[,1]),sdd15N=sd(CN[,2])))
+            
+            listaa<-list(datos=data,CarbonoNitrogeno=CN,promedio=promvalores,SD=sdvalores)
+            listaaa<-append(listaaa,list(listaa))
+          }
+          else
+            
+          {
+            stop("No se ha encontrado  ", i,"  en la columna  ", baseColumn)
+            return (NULL)
+          }
+          
+          
+          
+        }
+        else
+        {
+          stop("La columna ", baseColumn," no fue encontrada en el dataframe")
+          return (NULL)
+        }
+        
+        
+        
+      }
+      
+      return(listaaa)
+    }
+
+
+    #bases
+      mixture<-bases(datos,mixture,mixtureColumn,ColumnC,ColumnN)
+      bases<-bases(datos,baselines,baseColumn,ColumnC,ColumnN)
+
+      
+
+
+    #Nombres
+
+    Nombres<- baselines
+
+    #sourceMeans y sourceSD
+    
+    sources<-function(bases)
+    {
+      sourceMeans<-matrix(ncol = 2,nrow=length(bases))
+      sourceSD<-matrix(ncol = 2,nrow=length(bases))
+      
+     for (i in 1:length(bases))
+      {
+        for (j in 1:2)
+        {
+          sourceMeans[i,j]<-bases[[i]][[3]][j]
+          sourceSD[i,j]<-bases[[i]][[4]][j]
+        }
+      }
+      return(list(Means=sourceMeans,SD=sourceSD))
+    }
+    
+  Sourcess<-sources(bases)
+
+
+
+    #corrections function
+
+    funcionCorrections<- function(correctionsMeans,correctionsSD,Sourcess)
+    {
+      datMeans<-matrix(nrow=nrow(Sourcess[[1]]), ncol=2)
+      datSD<-matrix(nrow=nrow(Sourcess[[1]]), ncol=2)
+      tdfmeans<-sapply(TDF(), mean)
+      tdfsd<-sapply(TDF(), sd)
+    if(nrow(datMeans)>=nrow(correctionsMeans))
+    {
+      for (i in 1:nrow(datMeans))
+      {
+        for (j in 1:ncol(datMeans))
+        {
+            datMeans[i,j]<-correctionsMeans[i,j]
+            
+          
+        }
+      }
+    }
+    else
+    {
+      stop("Corrections Means no puede tener mas filas que el numero de bases colocadas")
+      return (NULL)
+    }
+      
+      
+      if(nrow(datSD)>=nrow(correctionsSD))
+      {
+        for (i in 1:nrow(datSD))
+        {
+          for (j in 1:ncol(datSD))
+          {
+            datSD[i,j]<-correctionsSD[i,j]
+            
+            
+          }
+        }
+      }
+      else
+      {
+        stop("Corrections SD no puede tener mas filas que el numero de bases colocadas")
+        return (NULL)
+      }    
+      
+      
+      
+
+      
+    for (i in 1:nrow(datMeans))
+    {
+      if(is.na(datMeans[i,1]) || is.null(datMeans[i,1]))
+      {
+        datMeans[i,1]<-tdfmeans[2]
+      }
+      if(is.na(datMeans[i,2]) || is.null(datMeans[i,2]))
+      {
+        datMeans[i,2]<-tdfmeans[1]
+      }
+      
+    }
+      
+      
+      for (i in 1:nrow(datSD))
+      {
+        if(is.na(datSD[i,1]) || is.null(datSD[i,1]))
+        {
+          datSD[i,1]<-tdfsd[2]
+        }
+        if(is.na(datSD[i,2]) || is.null(datSD[i,2]))
+        {
+          datSD[i,2]<-tdfsd[1]
+        }
+        
+      }
+    
+      colnames(datMeans)<-c("d13C","d15N")
+      colnames(datSD)<-c("d13C","d15N")
+      return(list(correctionsMeans=datMeans,correctionsSD=datSD))
+    }
+
+# 
+    corrections=funcionCorrections(correctionsMeans,correctionsSD,Sourcess)
+# 
+# 
+#     #group
+  gr<-mixture[[1]]$datos$Spp
+  gr<-factor(gr)
+  
+# 
+# 
+# 
+# 
+# 
+
+mix<-as.matrix(mixture[[1]][[2]])
+
+geese_simmr = simmr_load(mixtures = mix,
+                         source_names = Nombres,
+                         source_means = Sourcess[[1]],
+                         source_sds = Sourcess[[2]],
+                       # correction_means = corrections[[1]],
+                       # correction_sds = corrections[[2]],
+                       group = gr
+
+
+
+
+)
+
+
+
+
+    
+  return(geese_simmr)
+  #return(filtro2)
+    
+    
+  }
+  
+  
+  x<-TPtoSimmr()
+  x
+  
+  
+plot(x,group = 1:3)
