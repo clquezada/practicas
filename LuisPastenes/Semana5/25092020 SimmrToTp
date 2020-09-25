@@ -1,0 +1,184 @@
+library(tRophicPosition)
+library(readxl)
+library(tidyverse)
+library(xlsx)
+
+
+SimmrtoTP<-function(df="geese_data.xls",
+                    numpestanatotal=4,
+                    columnCc="d13C_Pl",
+                    columnNc="d15N_Pl",
+                    ubipestcolumnCN=1,
+                    Sources=c("Zostera","Grass"),
+                    columnSources="Sources",
+                    ubipestcolumnSources=2,
+                    ubipestTefs=3,
+                    ubipestConcDep=4
+                  
+                    
+                    
+  
+                    )
+  
+{
+ ruta= system.file("extdata",df, package = "simmr")
+  ruta
+  
+  
+  
+  if( file.exists(ruta))
+  {
+    datos<-list()
+    
+   if(numpestanatotal<=length(excel_sheets(ruta)))
+   {
+     for (i in 1:numpestanatotal)
+     {
+       datos<-append(datos,list(read_xls(ruta,i)) )
+     }
+     for (i in 1:numpestanatotal)
+     {
+       datos[[i]]<-as.data.frame(datos[[i]])
+     }
+   }
+  else
+    
+  {
+    stop("el numero de pestañas seleccionadas es mayor al numero de pestañas que tiene el archivo ")
+    return (NULL)
+  }
+    
+
+    
+   
+  }
+  else
+  {
+    stop("no existe ningun archivo con el nombre  ", df, "  dentro de simmr/extdata ")
+    return (NULL)
+  }
+  
+  CN<-select(datos[[ubipestcolumnCN]],columnCc,columnNc)
+  
+  sources<-function(datos,Sources,columnSources,ubipestcolumnSources)
+  {
+     if(ubipestcolumnSources<=length(excel_sheets(ruta)))
+     {
+       column<-names(datos[[ubipestcolumnSources]])
+       
+       if(has_element(column,columnSources))
+       {
+         data<-list()
+         for(i in Sources)
+         {
+           dataa<-datos[[ubipestcolumnSources]] %>% filter(datos[[ubipestcolumnSources]][,columnSources] %in% i)
+            data[[i]]<-dataa
+         }
+         
+        
+       }
+       
+       else
+       {
+         stop("la columna ", columnSources ," no fue encontrada en la pestaña numero " , ubipestcolumnSources , " del archivo")
+         return (NULL)
+       }
+     }
+      else
+      {
+        stop("el numero de pestañas seleccionadas de ubipestcolumnSources es mayor al numero de pestañas que tiene el archivo ")
+        return (NULL)
+      }
+    
+    return(data)
+  }
+  
+ recursos<-sources(datos,Sources,columnSources,ubipestcolumnSources)
+ 
+ 
+ 
+ 
+ 
+ 
+ teft<-function(datos,Sources,columnSources,ubipestTefs)
+ {
+   if(ubipestTefs<=length(excel_sheets(ruta)))
+   {
+     column<-names(datos[[ubipestTefs]])
+     
+     if(has_element(column,columnSources))
+     {
+      data<-list()
+       for(i in Sources)
+       {
+         dataa<-datos[[ubipestTefs]] %>% filter(datos[[ubipestTefs]][,columnSources] %in% i)
+         data[[i]]<-dataa
+         
+       }
+       
+       
+     }
+     
+     else
+     {
+       stop("la columna ", columnSources ," no fue encontrada en la pestaña numero " , ubipestTefs , " del archivo")
+       return (NULL)
+     }
+   }
+   else
+   {
+     stop("el numero de pestañas seleccionadas de ubipestcolumnSources es mayor al numero de pestañas que tiene el archivo ")
+     return (NULL)
+   }
+   
+   return(data)
+ }
+ 
+ rec<-teft(datos,Sources,columnSources,ubipestTefs)
+ 
+ 
+ Condep<-function(datos,Sources,columnSources, ubipestConcDep)
+ {
+   if( ubipestConcDep<=length(excel_sheets(ruta)))
+   {
+     column<-names(datos[[ ubipestConcDep]])
+     
+     if(has_element(column,columnSources))
+     {
+       data<-list()
+       for(i in Sources)
+       {
+         dataa<-datos[[ ubipestConcDep]] %>% filter(datos[[ ubipestConcDep]][,columnSources] %in% i)
+         data[[i]]<-dataa
+         
+       }
+       
+       
+     }
+     
+     else
+     {
+       stop("la columna ", columnSources ," no fue encontrada en la pestaña numero " , ubipestTefs , " del archivo")
+       return (NULL)
+     }
+   }
+   else
+   {
+     stop("el numero de pestañas seleccionadas de ubipestcolumnSources es mayor al numero de pestañas que tiene el archivo ")
+     return (NULL)
+   }
+   
+   return(data)
+ }
+ 
+ condep<-Condep(datos,Sources,columnSources,ubipestConcDep)
+ 
+ superdata<-list(Consumidor=CN,Baselines=recursos,DeltaBases=rec,Condep=condep)
+  
+  return(superdata)
+}
+
+
+
+x=SimmrtoTP()
+x
