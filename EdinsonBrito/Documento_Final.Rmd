@@ -1,0 +1,120 @@
+---
+title: "Trabajo Practica profesional"
+author: "Edinson Brito"
+date: "30-09-2020"
+output: html_document
+---
+
+
+
+# Descarga y actualizacion automatica en BOLD y NCBI
+
+### Introduccion:
+
+a modo de introducion contare un poco de mi expericencia entorno al proyecto "Descarga y actualizacion automatica en BOLD y NCBI":
+
+con respecto al ambiente laboral, tengo que decir que para mi fue un ambiente ideal. Don Claudio, mi "jefe", siempre me respondio las dudas, me facilito las herramientas con las cual trabajar, tanto de hardware como de software, se notaba interesado en el desarollo del proyecto y del desarollo personal, en general solo me queda darle las gracias por la oportunidad.
+
+El objetivo principal de este proyecto era generar una base de datos final con las secuencias de grupos taxonomicos especificos y mantener esta misma base de datos actualizada, el tiempo dedicado fue de 6 horas diarias iniciando  el 24 de agosto.
+
+mi desafio personal era en primera instancia, entender los terminos biologicos que se utilizaban, para luego poder realizar lo que se solicitaba, luego de superar esta primera barrera, me vi enfrentado a la necesidad de utilizar Ubuntu, para esto tuve que aprender "BASH", y por ultimo aprender el lenguaje "R", ya que los paquetes orientados a este ambito normalmente estaban en "R".
+
+luego de estas barreras, el trabajo se me hizo bastante ameno, logrando asi poder cumplir el objetivo principal.
+
+
+### Funciones Creadas:
+
+Query_Fecha(): Esta funcion devuelve la fecha actual y le fecha de hace 1 mes, con el fin de que se genere una consulta que vaya cambiando de forma automatica
+
+config_act(): Esta funcion crea un documento .txt que contiene los ajustes necesarios para realizar la actualizacion mensual de la base de datos 
+
+Actualizacion_ncbi("taxa_small.csv","act_config.txt"): Esta funcion es la encargada de hacer la descarga mensual de los nuevos datos, recibe dos parametros que es un archivo csv en el cual estan los datos que se necesitan descargar y el otro es un archivo txt que contiene la configuracion para descargar dichos datos, ademas esta funcion devuelve el orden y las sub familias de los datos que se estan descargando.
+
+Vsearch(Familia, Subfamilia, wd): Esta funcion es  la encargada de dereplicar las secuencias, es decir la que se encarga que entre los archivos descargados no se repitan las secuencias, con el fin de que en la base de datos solo hayan secuencias unicas, toma como entrada la familia, subfamilia (que son las salidas de la funcion Actualizacion_ncbi()) y ademas un wd que es el directorio en el que se trabajara.
+
+Descarga_NCBI_Taxon(): es la encargada de descargar todos los archivos de taxonomia que se encuentran actualmente en  NCBI
+
+
+CrearFuncion(): Crea un script por cada subfamilia que se encuentre, este script permite ejecutar el paquete entrez_qiime-master para establecer la taxonomia.
+
+NCBI_Taxon(): Otorga los permisos necesarios para que el paquete entrez_qiime-master funcione correctamente y ademas ordena todos los archivos en sus respectivas carpetas.
+
+Obtener_IDS(): Permite solo obtener el ID de los archivos fasta. (no se uso finalmente.)
+### Diagrama de flujo
+
+
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics("/home/claudio/Descargas/Captura.PNG")
+```
+
+### Codigo en ejecucion:
+definimos la direccion en donde trabajar:
+```{r}
+knitr::opts_knit$set(root.dir = '/home/claudio/Escritorio/BaseFinal')
+```
+cargamos la libreria PrimerMiner, esto permitira descargar en primera instancia la base de datos completa (la BOLD,NCBI y juntarlas) y avanzamos en la direccion de trabajo:
+
+```{r}
+library("PrimerMiner")
+knitr::opts_knit$set(root.dir = 'PrimerMiner-master/Sample_Data')
+```
+
+se crea la configuracion, sin consultas, esto permite establecer los parametros de descarga, para posteriormente descargar todos los datos actuales respecto al archivo csv:
+
+
+```{r}
+source("/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/PrimerMiner/R/batch_config.R")
+batch_config("config.txt") 
+```
+
+
+finalmente descargamos  la base de datos completa desde bold y ncbi, esta funcion recibe el archivo .csv en el cual estan los datos solicitados, y un archivo .txt en donde estan los parametros de descarga
+```{r}
+
+source("/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/PrimerMiner/R/batch_down.R")
+batch_download("taxa_small.csv", "config.txt")
+```
+
+
+Llamamos a la funcion Query_Fecha que permite obtener la fecha actual y 1 mes antes, con el fin de mantenter el margen de la base de datos NCBI
+```{r}
+source("/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/PrimerMiner/R/QueryFecha.R")
+Query = Query_Fecha()
+```
+
+con la funcion config_act creamos los parametros de descarga para la actualizacion mensual de la base de datos, salida un archivo .txt y de entrada una variable query, obtenida de la funcion anterior
+```{r}
+source("/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/PrimerMiner/R/Config_Actualizacion.R")
+config_act("act_config.txt", Query)
+```
+Esta funcion solo descarga la actualizacion mensual de la base de datos NCBI, las guarda con el nombre "Taxon"_GB_Act.fasta para que no sea igual que el original que descarga, recibe 2 variables de entrada, que son el archivo .csv que especifica los datos a descargar y el archivo .txt donde estan los parametros de descarga, ademas esta funcion devuelve el orden y las sub familias de los datos que se estan descargando.
+```{r}
+source("/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/PrimerMiner/R/BD_Actualizacion.R")
+Nombre = Actualizacion_ncbi("taxa_small.csv", "act_config.txt") 
+```
+
+
+obtenemos el valor de la familia y sub amilia (catefgoria principal y secundaria) para luego pasarlo junto con el directorio de trabajo a la funcion "Vsearch".
+```{r}
+Subfamilia = Nombre[[2]]
+Familia = Nombre[[1]]
+wd= "/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/Sample_Data/"
+source("/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/PrimerMiner/R/Funcion_Vsearch.R")
+Vsearch(Familia, Subfamilia, wd)
+```
+
+con la funcion "Descarga_NCBI_Taxon" descargamos todos los datos taxonomicos mediante ftp desde la pagina de NCBI.
+```{r}
+source("/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/PrimerMiner/R/Set_NBCI_Taxon.R")
+Descarga_NCBI_Taxon()
+```
+
+
+ejecutamos la funcion "NCBI_Taxon" con el fin de obtener solo la taxonomia especifica de los datos de interes (los que se encuentran en el archivo .csv)
+```{r}
+source("/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/PrimerMiner/R/Set_NBCI_Taxon.R")
+source("/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/PrimerMiner/R/NCBI_Taxo_Script.R")
+wd= "/home/claudio/Escritorio/BaseFinal/PrimerMiner-master/Sample_Data/"
+NCBI_Taxon(Familia,Subfamilia, wd)
+```
+
