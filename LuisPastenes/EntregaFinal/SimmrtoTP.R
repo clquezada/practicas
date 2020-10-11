@@ -67,7 +67,7 @@ SimmrtoTP<-function(df="geese_data.xls",
   ruta
 
 
-#creo una lista con las pestañas del archivo excel, la lista se llama: datos
+#creo una lista con las pestañas del archivo excel, el nombre de la lista "datos"
   if( file.exists(ruta))
   {
     datos<-list()
@@ -99,9 +99,11 @@ SimmrtoTP<-function(df="geese_data.xls",
     stop("no existe ningun archivo con el nombre  ", df, "  dentro de simmr/extdata ")
     return (NULL)
   }
- 
+ # de la lista "datos" selecciono las columnas de Carbono y nitrogeno y las asigno a la variable CN
   CN<-select(datos[[ubipestcolumnCN]],columnCc,columnNc)
-  
+ # definimos la funcion sources que esta encargada de devolver una lista de listas con la media y desviacion estandar de carbono y nitrogeno de todos los sources correspondientes.
+ # como argumentos recibe la lista de datos, un array con los sources, la columna donde se ubican esos sources y la pestana del excel en la cual se localizan.
+ 
   sources<-function(datos,Sources,columnSources,ubipestcolumnSources)
   {
      if(ubipestcolumnSources<=length(excel_sheets(ruta)))
@@ -134,13 +136,15 @@ SimmrtoTP<-function(df="geese_data.xls",
     
     return(data)
   }
-  
+ 
+  #llamamos a la funcion sources y el resultado se lo asignamos a la variable "recursos"
  recursos<-sources(datos,Sources,columnSources,ubipestcolumnSources)
  
  
  
  
- 
+  # definimos la funcion teft que devuelve una lista con la media y desviacion estandar de carbono y nitrogeno de los valores teft de todos los sources.
+ # como argumentos recibe la lista de datos, un array con los sources, la columna donde se ubican esos sources y la pestana del excel en la cual se localizan los teftsources.
  
  teft<-function(datos,Sources,columnSources,ubipestTefs)
  {
@@ -175,10 +179,11 @@ SimmrtoTP<-function(df="geese_data.xls",
    
    return(data)
  }
- 
+  #llamamos a la funcion teft y el resultado se lo asignamos a la variable "rec"
  rec<-teft(datos,Sources,columnSources,ubipestTefs)
  
- 
+   # definimos la funcion Condep que devuelve una lista con los valores de carbono y nitrogeno de los valores Concdep de todos los sources.
+  # como argumentos recibe la lista de datos, un array con los sources, la columna donde se ubican esos sources y la pestana del excel en la cual se localizan los ConcDep.
  Condep<-function(datos,Sources,columnSources, ubipestConcDep)
  {
    if( ubipestConcDep<=length(excel_sheets(ruta)))
@@ -212,10 +217,10 @@ SimmrtoTP<-function(df="geese_data.xls",
    
    return(data)
  }
- 
+ #llamamos a la funcion Condep y el resultado se lo asignamos a la variable "condep"
  condep<-Condep(datos,Sources,columnSources,ubipestConcDep)
  
- #verificamos que las columnas Mean c y N y SD C Y N se encuentren en la pestaña de sources y teft
+ #verificamos que las columnas Mean (Carbono y Nitrogeno) y SD (Carbono Y Nitrogeno)se encuentren en la pestaña de sources y teft
  
  if(!has_element(names(recursos[[1]]),meancolumnC))
  {
@@ -274,10 +279,10 @@ SimmrtoTP<-function(df="geese_data.xls",
    return (NULL)
  }
  
- #Funcion MEAN SD
+ #Funcion MEAN SD encargada de generar datos aleatorios con una media y desviacion estandar dada.
  meanSD <- function(x, mean, sd) {
    
-   set.seed(seed = 3)
+   
    x <- stats::rnorm(x, mean, sd)
    X <- x
    MEAN <- mean
@@ -286,12 +291,12 @@ SimmrtoTP<-function(df="geese_data.xls",
    MEAN + Z
  }
  
- 
+ #localizo la pocision de carbono y nitrogeno de Mean y SD
   positionMeanC=which(names(recursos[[1]])== meancolumnC)
   positionSDC=which(names(recursos[[1]])==sdcolumnC)
   positionMeanN=which(names(recursos[[1]])==meancolumnN)
   positionSDN=which(names(recursos[[1]])==sdcolumnN)
-  
+  #genero variables segun la cantidad de sources ingresadas.
   var_names <- paste("dNb", 1:length(Sources), sep="")
   var_names2 <- paste("dCb", 1:length(Sources), sep="")
   var_names3 <- paste("deltaNb", 1:length(Sources), sep="")
@@ -337,13 +342,14 @@ SimmrtoTP<-function(df="geese_data.xls",
   #agregar Carbono y Nitrogeno
  superdata$dNc<-CN[,2]
  superdata$dCc<-CN[,1]
-
+  #atributos
  attr(superdata,"class")<-"isotopeData"
  attr(superdata,"consumer")<-"consumer"
  
  var_names7 <- paste("baseline", 1:length(Sources), sep="")
  for (i in 1:length(Sources))
  {
+   #atributo baseline
    attr(superdata,var_names7[i])<-Sources[i]
  }
  
