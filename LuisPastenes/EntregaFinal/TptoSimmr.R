@@ -35,7 +35,7 @@
 #NULL o NA  se cambian por los valores que entrega la funcion TDF() de Trophic Position, la matriz ingresada
 #por el usuario no puede tener mas filas que la creada por la funcion.
 
-#@return una lista de la clase isotopeData
+#@return una lista de la clase Simmr_input
 
 #librerias necesarias
 
@@ -128,8 +128,7 @@ TPtoSimmr<-function(datos=datos2,
     return (NULL)
   }
   
-  
-  #TOMAR ARCHIVO GENERICO
+    
   
   
   #verificar columnas del filtro en el dataframe
@@ -158,7 +157,8 @@ TPtoSimmr<-function(datos=datos2,
   
   
   
-  #retorna un dataframe con los filtros aplicados
+  #funcionData es una funcion que retorna un dataframe con los filtros aplicados
+  #los argumentos de la funcion son el dataframe, la variable a filtrar y en que columna se encuentra.
   
   funcionData<- function(dataframe, item, Columnas)
   {
@@ -203,13 +203,14 @@ TPtoSimmr<-function(datos=datos2,
     
     return(dataframe)
   }
-  
+ # llamamos a la funcion funcionData y el resultado lo asignamos a la variable "datos".
   datos<-funcionData(datos,filtro,columnass)
   
   
   
   
   #retorna una lista con las filas de la base seleccionada, los valores, promedio y desviacion estandar de carbono y nitrogeno
+  #los argumentos que requiere esta funcion son el dataframe, el baseline, la columna donde se encuentra el baseline, el nombre de la columna de Carbono y nitrogeno.
   bases<- function(dataframe, base, baseColumn,ColumnC,ColumnN)
   {
     var<-names(dataframe)
@@ -268,7 +269,8 @@ TPtoSimmr<-function(datos=datos2,
   Nombres<- baselines
   
   #sourceMeans y sourceSD
-  
+ # recibe como argumento la lista de bases, se encarga de retornar una lista con
+#la matriz promedio y la matriz desviacion estandar de todas las baselines juntas.
   sources<-function(bases)
   {
     sourceMeans<-matrix(ncol = 2,nrow=length(bases))
@@ -284,12 +286,18 @@ TPtoSimmr<-function(datos=datos2,
     }
     return(list(Means=sourceMeans,SD=sourceSD))
   }
-  
+  #llamamos a la funcion sources y el resultado lo asignamos a la variable Sourcess.
   Sourcess<-sources(bases)
   
   
   
   #corrections function
+  
+ #crea dos matrices con las dimensiones de la media y desviacion estandar
+#producidos por la funcion sources, si las filas de la matriz creada son mayores o iguales
+#que la matriz ingresada por el usuario, se registran los valores en la nueva matriz, si existen valores
+#NULL o NA  se cambian por los valores que entrega la funcion TDF() de Trophic Position, la matriz ingresada
+#por el usuario no puede tener mas filas que la creada por la funcion.
   
   funcionCorrections<- function(correctionsMeans,correctionsSD,Sourcess)
   {
@@ -425,7 +433,7 @@ TPtoSimmr<-function(datos=datos2,
   #
   #
   
-  
+  #simmr_load crea una lista de la clase simmr_input con los datos de los mixtures y baselines ya calculadas.
   
   geese_simmr = simmr_load(mixtures = mix,
                            source_names = Nombres,
