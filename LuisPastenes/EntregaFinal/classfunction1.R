@@ -9,7 +9,7 @@ classfunction<-function(datos=x)
   #Funcion MEAN SD
   meanSD <- function(x, mean, sd) {
     
-    set.seed(seed = 3)
+   
     x <- stats::rnorm(x, mean, sd)
     X <- x
     MEAN <- mean
