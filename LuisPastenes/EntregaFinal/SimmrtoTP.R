@@ -61,11 +61,13 @@ SimmrtoTP<-function(df="geese_data.xls",
                     )
   
 {
+  
+#ruta del archivo 
  ruta= system.file("extdata",df, package = "simmr")
   ruta
 
 
-
+#creo una lista con las pestañas del archivo excel, la lista se llama: datos
   if( file.exists(ruta))
   {
     datos<-list()
@@ -97,7 +99,7 @@ SimmrtoTP<-function(df="geese_data.xls",
     stop("no existe ningun archivo con el nombre  ", df, "  dentro de simmr/extdata ")
     return (NULL)
   }
-  
+ 
   CN<-select(datos[[ubipestcolumnCN]],columnCc,columnNc)
   
   sources<-function(datos,Sources,columnSources,ubipestcolumnSources)
